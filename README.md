@@ -51,14 +51,13 @@ tags.
 
 The opening `<iex>` tag can take options:
 
-`in="dir"`
-
-: specify a directory (relative to pwd) in which to run the code. This
-  allows you to open files, compile, and so on.
-  
-`test="no"`
-
-: Do not run iex_test on this example.
+<dl>
+<dt>`in="dir"`</dt>
+<dd>specify a directory (relative to pwd) in which to run the code. This
+allows you to open files, compile, and so on.</dd>
+<dt>`test="no"`</dt>
+<dd>Do not run iex_test on this example.</dd>
+</dl>
 
 ## License
 
