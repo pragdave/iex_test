@@ -52,12 +52,21 @@ tags.
 The opening `<iex>` tag can take options:
 
 <dl>
-<dt>`in="dir"`</dt>
+<dt>in="dir"</dt>
 <dd>specify a directory (relative to pwd) in which to run the code. This
 allows you to open files, compile, and so on.</dd>
-<dt>`test="no"`</dt>
+<dt>test="no"</dt>
 <dd>Do not run iex_test on this example.</dd>
 </dl>
+
+In addition, if the first line of the `<iex>` block is
+
+~~~
+$ iex <filename>
+~~~
+
+Then the named file will be loaded before the test is run.
+
 
 ## License
 

@@ -12,27 +12,42 @@ defmodule IexTest.Runner do
   end 
 
   defp test_one_block({_file_name, params, content }) do
+    params = parse_params(params)
     content 
     |> split(%r/\n/) 
     |> map(String.strip(&1))
     |> split_tests
-    |> build_test_sequence
+    |> build_test_sequence(params)
     |> run_tests(params)
   end
 
-  defp build_test_sequence({ _preload, tests } ), do: build_test_sequence(tests, [])
+  defp build_test_sequence({ nil, tests }, params ) do
+    build_tests(tests, [])
+  end
 
-  defp build_test_sequence([], acc), do: reverse(acc)
-  defp build_test_sequence([ { code, result } | tail ], acc) do
-    build_test_sequence(tail, [ build_test(code, result) | acc ])
+  defp build_test_sequence({ preload, tests }, params ) do
+    in_dir = Keyword.get(params, :in, ".")
+    loader = quote do
+      Code.load_file(unquote(preload), unquote(in_dir))
+    end
+    build_tests(tests, [loader])
+  end
+
+  defp build_tests([], acc), do: reverse(acc)
+  defp build_tests([ { code, result } | tail ], acc) do
+    build_tests(tail, [ build_test(code, result) | acc ])
   end
 
   defp build_test(code, expected) do
     code_ast = code     |> Code.string_to_ast!
-    expected = expected |> remove_pids 
-    if !String.starts_with?(expected, "**") do
-      expected = Code.string_to_ast!(expected)
+
+    if length(expected) > 1 do
+      expected = join expected, "\n"
+      expected = [ "\"#{expected}\"" ]
     end
+    IO.puts "EXPECTED: #{inspect expected}"
+
+    expected = expected |> remove_pids |> Code.string_to_ast!
 
     IO.puts "Expected is #{inspect expected}"
     res = quote do

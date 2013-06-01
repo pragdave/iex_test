@@ -45,7 +45,8 @@ defmodule IexTest.Splitter do
 
 
   defp add_test(code, expected, tests) do
-    [ { join(reverse(code), "\n"), join(reverse(expected), "\n") } | tests ]
+    IO.puts "add test #{inspect expected}"
+    [ { join(reverse(code), "\n"), reverse(expected) } | tests ]
   end
 
 end
