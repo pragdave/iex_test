@@ -13,12 +13,14 @@ defmodule IexTest.Runner do
 
   defp test_one_block({file_name, params, content }) do
     params = parse_params(params)
-    content 
-    |> split(%r/\n/) 
-    |> map(String.strip(&1))
-    |> split_tests
-    |> build_test_sequence(params)
-    |> run_tests(file_name, params)
+    if Keyword.get(params, :test, "yes") != "no" do
+      content 
+      |> split(%r/\n/) 
+      |> map(String.strip(&1))
+      |> split_tests
+      |> build_test_sequence(params)
+      |> run_tests(file_name, params)
+    end
   end
 
   defp build_test_sequence({ nil, tests }, _params ) do
@@ -45,7 +47,7 @@ defmodule IexTest.Runner do
       expected = [ "\"#{expected}\"" ]
     end
 
-    expected = expected |> remove_pids |> Code.string_to_ast!
+    expected = expected |> Code.string_to_ast!
 
     res = if Regex.match?(%r{IO\.}, code) do
       generate_assertion_with_io(code, expected)
@@ -67,7 +69,7 @@ defmodule IexTest.Runner do
   end
 
   defp generate_assertion_with_io(code, expected) do
-    code_ast = code |> Code.string_to_ast!
+    code_ast = code |> to_value_ast
 
     quote do
       output = ExUnit.CaptureIO.capture_io fn ->
@@ -85,15 +87,20 @@ defmodule IexTest.Runner do
     end 
   end
 
-  defp remove_pids(string) do
-    Regex.replace(%r{#(\w+)<[^>]*>}, string, ":\\1")
-  end
-
+  defp to_value_ast(code) do
+    ast = Code.string_to_ast!(code)
+    quote do 
+      try do
+        unquote(ast)
+      rescue e
+        e.message
+      end
+    end
+  end 
 
   defp run_tests(tests, file_name, _params) do
     wrapper = quote do
       (fn ->
-          require IexTest.Assert
           me = self
           file_name = unquote(file_name)
           unquote_splicing(tests)
