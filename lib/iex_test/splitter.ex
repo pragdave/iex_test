@@ -1,6 +1,10 @@
 defmodule IexTest.Splitter do
 
-  import Enum, only: [ join: 2, reverse: 1 ]
+  import Enum,   only: [ join: 2, map: 2, reverse: 1 ]
+  import String, only: [ strip: 1]
+
+  alias IexTest.TestSequence, as: TS
+  alias IexTest.Test,         as: T
 
   @moduledoc """
   Given the contents of an <iex> block, break it into
@@ -10,17 +14,17 @@ defmodule IexTest.Splitter do
   """
   def tee(val, fun), do: (fun.(val); val)
 
-  def split_tests(lines) do
-    { preload, code } = split_tests(lines, [], [], [], nil)
-    { preload, reverse(code) }
+  def split_tests(lines, original_line_number // 0) do
+    TS[preload: preload, tests: tests] = split_tests(lines, [], [], [], nil)
+    TS.new(preload: preload, tests: reverse(tests), line_number: original_line_number)
   end
 
   defp split_tests([], tests, _code, [], preload) do
-    { preload, tests }
+    TS.new(preload: preload, tests: tests)
   end
 
   defp split_tests([], tests, code, expected, preload) do
-    { preload, add_test(code, expected, tests) }
+    TS.new(preload: preload, tests: add_test(code, expected, tests))
   end
 
   defp split_tests([<< "$ iex ", rest :: binary >> | t], tests, code, [], _preload) do
@@ -28,24 +32,31 @@ defmodule IexTest.Splitter do
   end
 
   defp split_tests([<< "iex>", rest :: binary >> | t], tests, code, [], preload) do
-    split_tests(t, tests, [ rest | code ], [], preload)
+    split_tests(t, tests, [ strip(rest) | code ], [], preload)
   end
 
   defp split_tests([<< "iex>", rest :: binary >> | t], tests, code, expected, preload) do
-    split_tests(t, add_test(code, expected, tests), [ rest ], [], preload)
+    split_tests(t, add_test(code, expected, tests), [ strip(rest) ], [], preload)
   end
 
   defp split_tests([<< "...>", rest :: binary >> | t], tests, code, expected, preload) do
-     split_tests(t, tests, [ rest | code ], expected, preload)
+     split_tests(t, tests, [ strip(rest) | code ], expected, preload)
   end
 
   defp split_tests( [ value | t], tests, code, expected, preload) do
-    split_tests(t, tests, code, [ value | expected ], preload)
+    split_tests(t, tests, code, [ strip(value) | expected ], preload)
   end
 
 
   defp add_test(code, expected, tests) do
-    [ { join(reverse(code), "\n"), reverse(expected) } | tests ]
+    [ 
+      T.new(code:     code |> remove_comments |> reverse, 
+            expected: expected |> reverse)
+      | tests 
+    ]
   end
 
+  defp remove_comments(code) do
+    code |> map fn line -> Regex.replace(%r/\s*#\s.*/, line, "") end
+  end
 end
