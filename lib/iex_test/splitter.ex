@@ -5,6 +5,7 @@ defmodule IexTest.Splitter do
 
   alias IexTest.TestSequence, as: TS
   alias IexTest.Test,         as: T
+  alias IexTest.IexBlock,     as: IB
 
   @moduledoc """
   Given the contents of an <iex> block, break it into
@@ -43,9 +44,17 @@ defmodule IexTest.Splitter do
      split_tests(t, tests, [ strip(rest) | code ], expected, preload)
   end
 
+  # This is where we pick up the expected output. The .. case is
+  # continuation line
+  defp split_tests( [ << ".. ", rest :: binary >> | t], tests, code, 
+                    [ last_expected | expected ], preload) do
+    split_tests(t, tests, code, [ "#{last_expected} #{strip(rest)}" | expected ], preload)
+  end
+
   defp split_tests( [ value | t], tests, code, expected, preload) do
     split_tests(t, tests, code, [ strip(value) | expected ], preload)
   end
+
 
 
   defp add_test(code, expected, tests) do

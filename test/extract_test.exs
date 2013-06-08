@@ -1,7 +1,9 @@
-
 defmodule ExtractTest do
   use    ExUnit.Case
   import IexTest.Extract
+
+  alias IexTest.IexBlock, as: IB
+
 
   test "Extract one block finds end of block and updates line number" do
     lines = %W{
@@ -32,6 +34,18 @@ defmodule ExtractTest do
       </iex>
       seven}
     result = extract_iex_blocks(lines, "a.ex")
-    assert result == [ %W{three four}, %W{six}]
+    b1 = IB.new(file_name: "a.ex", start_line: 4, params: "", lines: %w{three four})
+    b2 = IB.new(file_name: "a.ex", start_line: 9, params: "", lines: %w{six})
+    assert result == [ b1, b2 ]
+  end
+
+  test "parameters are picked up" do
+    lines = [
+      %b{<iex p1="one" p2="two">},
+      "line",
+      "</iex>"
+    ]
+    [ result ] = extract_iex_blocks(lines, "a.ex")
+    assert result.params == %b{p1="one" p2="two"}
   end
 end

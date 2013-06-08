@@ -2,6 +2,8 @@ defmodule IexTest.Extract do
 
   import Enum, only: [ reverse: 1 ]
 
+  alias IexTest.IexBlock, as: IB
+
   @moduledoc """
   Given a list of file names, return a list of tuples:
 
@@ -21,13 +23,21 @@ defmodule IexTest.Extract do
   end
 
   @doc false
+  def extract_iex_blocks(lines, file_name) do
+    extract_iex_blocks(lines, file_name, _line_number=1, _acc=[])
+  end
+
+  @doc false
   def extract_iex_blocks([], _file_name, _line_number,  acc), do: reverse(acc)
 
-  def extract_iex_blocks([ line | rest ], file_name, line_number // 0,  acc // []) do
-    if Regex.match?(%r{<iex([^>]*)>\s*$}, line) do
-      { block, new_rest, new_line_number } = extract_one_block(rest, line_number+1, [])
+  def extract_iex_blocks([ line | rest ], file_name, line_number,  acc) do
+    case Regex.run(%r{<iex\s*([^>]*)>\s*$}, line) do
+    [ _, params ] ->
+      { lines, new_rest, new_line_number } = extract_one_block(rest, line_number+1, [])
+      block = IB.new(lines: lines, start_line: line_number+1, 
+                     params: params, file_name: file_name)
       extract_iex_blocks(new_rest, file_name, new_line_number, [ block | acc ]) 
-    else
+    nil ->
       extract_iex_blocks(rest, file_name, line_number+1, acc)
     end 
   end 

@@ -51,4 +51,9 @@ defmodule SplitterTest do
   test "comment is stripped from multiple lines of code" do
     assert split_tests(["iex> 1+ # a comment", "...> 2# and another", "3"]) == TS[preload: nil, tests: [ T[code: ["1+", "2"], expected: ["3"]] ]]
   end
+
+  test "continuation lines work in expectations" do
+    assert split_tests(["iex> 1", "** one", ".. two"]) ==
+           TS[preload: nil, tests: [ T[code: ["1"], expected: ["** one two"]]]]
+  end
 end
