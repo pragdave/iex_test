@@ -47,7 +47,7 @@ defmodule IexTest.Runner do
     generate_try_block = String.starts_with?(first, "**")
 
     res = generate_assertion_with_io(code, expected, generate_try_block, Keyword.get(params, :in, nil))
-#        res |> Macro.to_binary |> IO.puts 
+    #    res |> Macro.to_binary |> IO.puts 
     res
   end
 
@@ -71,6 +71,7 @@ defmodule IexTest.Runner do
       rescue e ->
         IO.puts "Runtime error: #{e.message}"
         IO.puts unquote(code)
+        raise e
       end
     end 
   end
@@ -179,6 +180,9 @@ defmodule IexTest.Runner do
 
       expected == inspect(actual) ->
         true
+
+      expected.starts_with?("** ") ->
+        false 
 
       Code.eval_string(expected) == actual ->
         true
