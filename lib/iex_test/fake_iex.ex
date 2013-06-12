@@ -5,7 +5,8 @@ defmodule IexTest.FakeIex do
   @moduledoc """
   Fake out the helpers from iex that our examples use.
   """
-  def c(files, path // Process.get(@dir_key, ".")) do
+  def c(files), do: c(files, Process.get(@dir_key, "."))
+  def c(files, path) do
     tuples = Kernel.ParallelCompiler.files_to_path List.wrap(files), path
     Enum.map tuples, elem(&1, 0)
   end 
