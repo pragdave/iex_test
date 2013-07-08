@@ -8,7 +8,7 @@ defmodule IexTest.Runner do
   alias  IexTest.Test,         as: T
   alias  IexTest.IexBlock,     as: IB
 
-  @fake_functions [IexTest.FakeIex, [c: 1, c: 2, cd: 1, r: 1]]
+  @fake_functions [{IexTest.FakeIex, [c: 1, c: 2, cd: 1, r: 1, raise: 1, raise: 2]}]
 
   def test_blocks([]), do: []
   def test_blocks([h|t]) do
@@ -26,8 +26,8 @@ defmodule IexTest.Runner do
     end
   end
 
-  defp build_test_sequence(TS[preload: nil, tests: tests], params ) do
-    build_tests(tests, [], params)
+  defp build_test_sequence(TS[preload: nil, tests: tests], _params) do
+    build_tests(tests, [])
   end
 
   defp build_test_sequence(TS[preload: preload, tests: tests], params ) do
@@ -35,87 +35,77 @@ defmodule IexTest.Runner do
     loader = quote do
       Code.load_file(unquote(preload), unquote(in_dir))
     end
-    build_tests(tests, [loader], params)
+    build_tests(tests, [loader])
   end
 
-  defp build_tests([], acc, _params), do: reverse(acc)
-  defp build_tests([ T[code: code, expected: expected] | tail ], acc, params) do
+  defp build_tests([], acc), do: reverse(acc)
+  defp build_tests([ T[code: code, expected: expected] | tail ], acc) do
     #debug("build tests", expected)
-    build_tests(tail, [ build_test(join(code, "\n"), expected, params) | acc ], params)
+    build_tests(tail, [ build_test(join(code, "\n"), expected) | acc ])
   end
 
-  defp build_test(code, expected, params) do
-    [ first | _ ] = expected
-    generate_try_block = String.starts_with?(first, "**")
-
-    generate_assertion_with_io(code, expected, generate_try_block, Keyword.get(params, :in, nil))
+  defp build_test(code, expected) do
+#    [ first | _ ] = expected
+#    generate_try_block = String.starts_with?(first, "**")
+    generate_assertion(code, expected) #, generate_try_block)
   end
 
 
-  defp generate_assertion_with_io(code, expected, generate_try_block, in_dir) do
+  defp generate_assertion(code, expected) do #, _generate_try_block) do
     #debug("generate", expected)
     quote(hygiene: [ vars: false ]) do
-#      try do
-        output = ExUnit.CaptureIO.capture_io fn ->
-          code_ast = IexTest.Runner.to_value_ast(unquote(code), unquote(in_dir))
-          result = try do
-            Code.eval_quoted(code_ast, binding, functions: @fake_functions)
-          rescue e ->
-            { "** (#{inspect e.__record__(:name)}) #{e.message}", binding }
-          end
-          me <- { :value,  result }
+      output = ExUnit.CaptureIO.capture_io fn ->
+        code_ast = IexTest.Runner.to_value_ast(unquote(code))
+        result = try do
+          Code.eval_quoted(code_ast, binding, functions: unquote(@fake_functions))
+        rescue e ->
+          { "** (#{inspect e.__record__(:name)}) #{e.message}", binding }
         end
+        me <- { :value,  result }
+      end
 
-        { value, binding } = receive do
-           { :value, { value, binding }} -> 
-            IO.puts "Received: #{inspect value}, #{inspect binding}"
-             { [ value ], binding }
-        end
-        IO.puts ">>>>> #{inspect binding}"
+      { value, _binding } = receive do
+         { :value, { value, binding }} -> 
+           { [ value ], binding }
+      end
 
-        if output, do: value = split(strip(output), "\n") ++ value
-        report_result(file_name, unquote(expected), value, unquote(code))
-#      rescue e ->
-#        IO.puts "Runtime error: #{e.message}"
-#        IO.puts unquote(code)
-#        raise e
-#      end
+      if output, do: value = split(strip(output), "\n") ++ value
+      report_result(file_name, unquote(expected), value, unquote(code))
     end 
   end
 
 
-  def to_value_ast(code, nil) do
+  def to_value_ast(code) do
     ast = Code.string_to_ast!(code)
     quote(hygiene: [ vars: false ]) do 
       unquote(ast)
     end
   end 
 
-  def to_value_ast(code, in_dir) do
-    ast = Code.string_to_ast!(code)
-    quote(hygiene: [ vars: false ]) do 
-      File.cd!(unquote(in_dir), fn -> unquote(ast) end)
-    end
-  end 
 
+  defp run_tests(tests, file_name, line_number, params) do
+    in_dir = Keyword.get(params, :in, ".")
 
-  defp run_tests(tests, file_name, line_number, _params) do
     wrapper = quote(hygiene: [ vars: false ]) do
 
       defmodule Wrapper do
-        import IexTest.Runner, only: [ to_value_ast: 2, report_result: 4]
+        import IexTest.Runner, only: [ to_value_ast: 1, report_result: 4]
         import IexTest.FakeIex
+
         def the_tests(me, binding, file_name) do
-          unquote_splicing(tests)
+          try do 
+            File.cd!(unquote(in_dir), fn -> unquote_splicing(tests) end)
+          rescue
+            e ->
+              IO.puts "Uncaught exception: #{e.message}"
+              IO.puts Macro.to_binary(unquote(tests))
+          end
         end
       end
-      me = self
-      binding = []
-      file_name = unquote(file_name)
 
-      Wrapper.the_tests(me, binding, file_name)
+      Wrapper.the_tests(self, _initial_binding=[], unquote(file_name))
     end
-    #  IO.puts(Macro.to_binary(wrapper))
+    # IO.puts(Macro.to_binary(wrapper))
     Code.compiler_options(ignore_module_conflict: true)
     Code.eval_quoted(wrapper, [], 
                     file: file_name, 
@@ -168,16 +158,25 @@ defmodule IexTest.Runner do
   end
 
   def check_equal({expected, expected}), do: true
-  def check_equal(e = {expected, actual}) do
+  def check_equal(r = {expected, actual}) do
     try do 
       cond do
+
+        is_binary(expected) and is_binary(actual) and String.starts_with?(expected, "...") ->
+          fake_expected = Regex.replace(%r{\.\.\.\s*}, expected, "")
+          String.ends_with?(actual, fake_expected)
+
+        is_float(actual) ->
+          if is_binary(expected), do: {expected,_} = String.to_float(expected)
+          abs(expected - actual) < (expected / 10_000)
+
         remove_hash_terms(expected) == remove_hash_terms(actual) ->
           true
 
         expected == inspect(actual) ->
           true
 
-        String.starts_with?(expected, "** ") ->
+        is_binary(expected) and String.starts_with?(expected, "** ") ->
           false 
 
         Code.eval_string(expected) == actual ->
@@ -186,9 +185,10 @@ defmodule IexTest.Runner do
         true ->
           false
       end 
-    rescue
-      e -> false
-    end
+      rescue
+        _ -> 
+          false
+      end
   end
 
   defp remove_hash_terms(string) when !is_binary(string), do: remove_hash_terms(inspect string)
@@ -211,14 +211,14 @@ defmodule IexTest.Runner do
     |> map fn [k,v] -> {binary_to_atom(k),v} end
   end
 
-  defp debugc(_, _, _ // nil), do: nil
+  defp debug(_, _, _ // nil), do: nil
 
-  defp debug(where, expected, actual // nil) do
-    IO.puts "====== #{where}"
-    expected |> map(IO.inspect(&1))
-    if actual do
-      IO.puts "--- actual"
-      actual |> map(IO.inspect(&1))
-    end
-  end
+  # defp debugx(where, expected, actual // nil) do
+  #   IO.puts "====== #{where}"
+  #   expected |> map(IO.inspect(&1))
+  #   if actual do
+  #     IO.puts "--- actual"
+  #     actual |> map(IO.inspect(&1))
+  #   end
+  # end
 end  

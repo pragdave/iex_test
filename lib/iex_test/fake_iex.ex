@@ -23,6 +23,9 @@ defmodule IexTest.FakeIex do
     end
   end
 
+  def raise(msg), do: Kernel.raise(msg)
+  def raise(msg, args), do: Kernel.raise(msg, args)
+
   defp source(module) do
     source = module.module_info(:compile)[:source]
 

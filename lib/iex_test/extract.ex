@@ -48,7 +48,7 @@ defmodule IexTest.Extract do
     if line |> String.strip |> String.starts_with?("</iex>") do
       { reverse(acc), rest, line_number+1 }
     else  
-      extract_one_block(rest, line_number+1, [ line | acc ])
+      extract_one_block(rest, line_number+1, [ String.lstrip(line) | acc ])
     end 
   end
 end
