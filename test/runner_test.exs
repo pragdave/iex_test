@@ -7,7 +7,7 @@ defmodule RunnerTest do
 
   import String, only: [strip: 1, split: 2]
 
-  def __l__(lines, _opts) do
+  def sigil_l(lines, _opts) do
     lines |> strip |> split("\n") |> Enum.map(function(strip/1))
   end
 
@@ -22,7 +22,6 @@ defmodule RunnerTest do
     assert Keyword.get(params, :in) == "a"
     assert Keyword.get(params, :test) == "no"
   end
-
 
   test "check_equal with two strings" do
     assert check_equal({"cat", "cat"}) == true
@@ -61,25 +60,25 @@ defmodule RunnerTest do
   end
 
   test "report_result succeeds if expected == actual" do
-    assert report_result("a.pml", ["a"], ["a"], "code") == true
+    assert report_result("a.pml", 1, ["a"], ["a"], "code") == true
   end
 
   test "report_result succeeds if expected == actual with multiple lines" do
-    assert report_result("a.pml", ["a", "b"], ["a", "b"], "code") == true
+    assert report_result("a.pml", 1, ["a", "b"], ["a", "b"], "code") == true
   end
 
   test "report result ignores extra actual lines if expected ends ..." do
-    assert report_result("a.pml", ["a..."], ["a", "b"], "code") == true
+    assert report_result("a.pml", 1, ["a..."], ["a", "b"], "code") == true
   end
 
   test "report_result ignores extra actual lines if expected ends with ellipsis" do
-    assert report_result("a.pml", ["a…"], ["a", "b"], "code") == true
+    assert report_result("a.pml", 1, ["a…"], ["a", "b"], "code") == true
   end
 
   test "report_result reports error if expected and actual are different sizes" do
     with_mock IexTest.Runner, [:passthrough],
-              [ report_error: fn("a.pml", ["a"], ["a","b"], "code") -> :reported end ] do
-      assert IexTest.Runner.report_result("a.pml", ["a"], ["a", "b"], "code") == :reported
+              [ report_error: fn("a.pml", 1, ["a"], ["a","b"], "code") -> :reported end ] do
+      assert IexTest.Runner.report_result("a.pml", 1, ["a"], ["a", "b"], "code") == :reported
     end
   end
 
@@ -128,7 +127,7 @@ defmodule RunnerTest do
   test "returned lists are handled" do
   run_test %l{
       iex> Enum.map [1,2,3,4], fn (n) -> n > 2 end
-      [false,false,true,true]
+      [false, false, true, true]
     }
   end
 
@@ -144,13 +143,13 @@ defmodule RunnerTest do
 
   test "runner can call faked iex functions" do
     run_test  %l{
-      iex> c("times.ex")
+      iex> c("times.exs")
       [Times]
     }
   end
 
   defp run_test(lines) do
-    ib = IexTest.IexBlock.new(file_name: "a.pml", start_line: 1, params: "in=\"test/code_to_load\"", lines: lines)
+    ib = IexTest.IexBlock.new(file_name: "a.pml", start_line: 1, params: %b{in="test/code_to_load"}, lines: lines)
 #    with_mock runner=IexTest.Runner, [:passthrough],
 #      [ report_error: fn(_,expected,actual,_) -> raise "Report error called unexpectedly\nExpected: #{inspect expected}\nActual: #{inspect actual}" end] do
       IexTest.Runner.test_one_block(ib)

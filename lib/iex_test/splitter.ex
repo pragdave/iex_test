@@ -59,7 +59,7 @@ defmodule IexTest.Splitter do
 
   defp add_test(code, expected, tests) do
     [ 
-      T.new(code:     code |> remove_comments |> reverse, 
+      T.new(code:     code     |> remove_comments |> reverse, 
             expected: expected |> reverse)
       | tests 
     ]
