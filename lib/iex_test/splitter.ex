@@ -44,6 +44,16 @@ defmodule IexTest.Splitter do
      split_tests(t, tests, [ strip(rest) | code ], expected, preload)
   end
 
+
+  # Ignore comments
+  defp split_tests( [ << "# ", rest :: binary >> | t], tests, code, expected, preload) do
+    split_tests(t, tests, code, expected, preload)
+  end
+
+  defp split_tests( [ "#" | t], tests, code, expected, preload) do
+    split_tests(t, tests, code, expected, preload)
+  end
+
   # This is where we pick up the expected output. The .. case is
   # continuation line
   defp split_tests( [ << ".. ", rest :: binary >> | t], tests, code, 

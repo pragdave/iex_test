@@ -8,8 +8,10 @@ defmodule IexTest.Runner do
   alias  IexTest.Test,         as: T
   alias  IexTest.IexBlock,     as: IB
 
-  @fake_functions [{IexTest.FakeIex, [c: 1, c: 2, cd: 1, r: 1, raise: 1, raise: 2]} | 
-                    __ENV__.functions]
+  @fake_functions (try do
+    import IexTest.FakeIex
+    __ENV__.functions
+  end)
 
   def test_blocks(blocks), do: each(blocks, test_one_block(&1))
 

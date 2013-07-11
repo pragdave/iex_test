@@ -56,4 +56,9 @@ defmodule SplitterTest do
     assert split_tests(["iex> 1", "** one", ".. two"]) ==
            TS[preload: nil, tests: [ T[code: ["1"], expected: ["** one two"]]]]
   end
+
+  test "Comments are stripped from expectations" do
+    assert split_tests(["iex> 1", "# comment one", "#", "three"]) ==
+           TS[preload: nil, tests: [ T[code: ["1"], expected: ["three"]]]]
+  end  
 end
