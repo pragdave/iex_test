@@ -8,7 +8,7 @@ defmodule RunnerTest do
   import String, only: [strip: 1, split: 2]
 
   def sigil_l(lines, _opts) do
-    lines |> strip |> split("\n") |> Enum.map(function(strip/1))
+    lines |> strip |> split("\n") |> Enum.map(&strip/1)
   end
 
   test "empty parameters are successfully parsed" do

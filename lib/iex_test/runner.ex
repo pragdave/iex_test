@@ -13,7 +13,7 @@ defmodule IexTest.Runner do
     __ENV__.functions
   end)
 
-  def test_blocks(blocks), do: each(blocks, test_one_block(&1))
+  def test_blocks(blocks), do: each(blocks, &test_one_block/1)
 
   def test_one_block(IB[file_name: file_name, start_line: line_number, params: params, lines: lines]) do
     params = parse_params(params)
@@ -26,7 +26,11 @@ defmodule IexTest.Runner do
 
   def run_tests(TS[preload: preload, tests: tests], file_name, line_number, params) do
     Code.compiler_options(ignore_module_conflict: true)
-    reduce(tests, _binding=[], run_one_test(&1, &2, file_name, line_number, params))
+    if preload do
+      in_dir = Keyword.get(params, :in, ".")
+      IexTest.FakeIex.c(preload, in_dir)
+    end
+    reduce(tests, _binding=[], &run_one_test(&1, &2, file_name, line_number, params))
   end
 
   def run_one_test(T[code: code, expected: expected], binding, file_name, line_number, params) do
@@ -89,7 +93,7 @@ defmodule IexTest.Runner do
 
   def check_all_equal(list_of_expected_and_actual) do
     list_of_expected_and_actual
-    |> Enum.map(function(check_equal/1))
+    |> Enum.map(&check_equal/1)
     |> Enum.all?
   end
 

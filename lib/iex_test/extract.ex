@@ -1,6 +1,6 @@
 defmodule IexTest.Extract do
 
-  import Enum, only: [ reverse: 1 ]
+  import Enum, only: [ map: 2, reverse: 1 ]
 
   alias IexTest.IexBlock, as: IB
 
@@ -13,9 +13,8 @@ defmodule IexTest.Extract do
 
   """
 
-  def iex_blocks([]), do: []
-  def iex_blocks([h|t]) do
-    [ extract_one_file(h) | iex_blocks(t)]
+  def iex_blocks(files) do
+    files |> map(&extract_one_file/1)
   end 
 
   defp extract_one_file(file_name) do

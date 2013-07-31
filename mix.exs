@@ -22,8 +22,8 @@ defmodule IexTest.Mixfile do
   defp deps(:dev), do: deps(:test)
   defp deps(:test) do
     deps(:prod) ++ [ 
-      { :meck, github: "eproxus/meck" },
-      { :mock, github: "jjh42/mock" }
+      { :mock, github: "jjh42/mock" },
+      { :meck, "0.7.2", github: "eproxus/meck", override: true }
     ]
 
   end

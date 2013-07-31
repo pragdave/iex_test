@@ -7,8 +7,11 @@ defmodule IexTest.FakeIex do
   """
   def c(files), do: c(files, Process.get(@dir_key, "."))
   def c(files, path) do
-    tuples = Kernel.ParallelCompiler.files_to_path List.wrap(files), path
-    Enum.map tuples, elem(&1, 0)
+    files
+    |> List.wrap
+    |> Enum.map(fn file -> "#{path}/#{file}" end)
+    |> Kernel.ParallelCompiler.files
+    |> Enum.map &elem(&1, 0)
   end 
 
   def cd(path) do
