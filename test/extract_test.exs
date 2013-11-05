@@ -41,11 +41,11 @@ defmodule ExtractTest do
 
   test "parameters are picked up" do
     lines = [
-      %b{<iex p1="one" p2="two">},
+      %s{<iex p1="one" p2="two">},
       "line",
       "</iex>"
     ]
     [ result ] = extract_iex_blocks(lines, "a.ex")
-    assert result.params == %b{p1="one" p2="two"}
+    assert result.params == %s{p1="one" p2="two"}
   end
 end

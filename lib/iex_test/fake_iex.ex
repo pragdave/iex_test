@@ -33,7 +33,7 @@ defmodule IexTest.FakeIex do
     source = module.module_info(:compile)[:source]
 
     case source do
-      { :source, source } -> list_to_binary(source)
+      { :source, source } -> String.from_char_list!(source)
       _ -> nil
     end
   end

@@ -148,6 +148,6 @@ defmodule IexTest.Runner do
 
   def parse_params(params) do
     Regex.scan(%r/(\w+)="([^"]*)"/, String.strip(params))
-    |> map fn [k,v] -> {binary_to_atom(k),v} end
+    |> map fn [_,k,v] -> {binary_to_atom(k),v} end
   end
 end  

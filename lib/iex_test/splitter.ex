@@ -5,7 +5,6 @@ defmodule IexTest.Splitter do
 
   alias IexTest.TestSequence, as: TS
   alias IexTest.Test,         as: T
-  alias IexTest.IexBlock,     as: IB
 
   @moduledoc """
   Given the contents of an <iex> block, break it into
@@ -46,7 +45,7 @@ defmodule IexTest.Splitter do
 
 
   # Ignore comments
-  defp split_tests( [ << "# ", rest :: binary >> | t], tests, code, expected, preload) do
+  defp split_tests( [ << "# ", _rest :: binary >> | t], tests, code, expected, preload) do
     split_tests(t, tests, code, expected, preload)
   end
 
