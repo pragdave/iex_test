@@ -1,6 +1,6 @@
 # IexTest
 
-Elixit comes with a wonderful doctest extension to its testing
+Elixir comes with a wonderful doctest extension to its testing
 framework. This reads the documentation for the functions in your code
 and extracts from them and `iex` sessions. It then runs the code in
 these sessions and verifies that the output is the same as the output

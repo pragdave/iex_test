@@ -14,7 +14,7 @@ defmodule IexTest.Splitter do
   """
   def tee(val, fun), do: (fun.(val); val)
 
-  def split_tests(lines, original_line_number // 0) do
+  def split_tests(lines, original_line_number \\ 0) do
     TS[preload: preload, tests: tests] = split_tests(lines, [], [], [], nil)
     TS.new(preload: preload, tests: reverse(tests), line_number: original_line_number)
   end
@@ -75,6 +75,6 @@ defmodule IexTest.Splitter do
   end
 
   defp remove_comments(code) do
-    code |> map fn line -> Regex.replace(%r/\s*#\s.*/, line, "") end
+    code |> map fn line -> Regex.replace(~r/\s*#\s.*/, line, "") end
   end
 end

@@ -17,7 +17,7 @@ defmodule RunnerTest do
   end
 
   test "non-empty params are successfully parsed" do
-    params = parse_params(%s{in="a" test="no"})
+    params = parse_params(~s{in="a" test="no"})
     assert length(params) == 2
     assert Keyword.get(params, :in) == "a"
     assert Keyword.get(params, :test) == "no"
@@ -83,14 +83,14 @@ defmodule RunnerTest do
   end
 
   test "runner runs single step" do 
-    run_test %l{
+    run_test ~l{
       iex> a = 1
       1
     }
   end
 
   test "runner runs two steps" do 
-    run_test %l{
+    run_test ~l{
       iex> a = 1
       1
       iex> b = 2
@@ -99,7 +99,7 @@ defmodule RunnerTest do
   end
 
   test "runner passes values from one step to the next" do 
-    run_test %l{
+    run_test ~l{
       iex> a = 1
       1
       iex> b = 2
@@ -110,7 +110,7 @@ defmodule RunnerTest do
   end
 
   test "runner captures I/O" do
-    run_test %l{
+    run_test ~l{
       iex> IO.puts "hello"
       hello
       :ok
@@ -118,21 +118,21 @@ defmodule RunnerTest do
   end
 
   test "runner catches exceptions" do
-    run_test  %l{
+    run_test  ~l{
       iex> 1 / 0
       ** (ArithmeticError) bad argument in arithmetic expression
     }
   end
 
   test "returned lists are handled" do
-  run_test %l{
+  run_test ~l{
       iex> Enum.map [1,2,3,4], fn (n) -> n > 2 end
       [false, false, true, true]
     }
   end
 
   test "runner with I/O passes values to next" do
-    run_test %l{
+    run_test ~l{
       iex> a = IO.puts 1
       1
       :ok
@@ -142,14 +142,14 @@ defmodule RunnerTest do
   end
 
   test "runner can call faked iex functions" do
-    run_test  %l{
+    run_test  ~l{
       iex> c("times.exs")
       [Times]
     }
   end
 
   defp run_test(lines) do
-    ib = IexTest.IexBlock.new(file_name: "a.pml", start_line: 1, params: %s{in="test/code_to_load"}, lines: lines)
+    ib = IexTest.IexBlock.new(file_name: "a.pml", start_line: 1, params: ~s{in="test/code_to_load"}, lines: lines)
 #    with_mock runner=IexTest.Runner, [:passthrough],
 #      [ report_error: fn(_,expected,actual,_) -> raise "Report error called unexpectedly\nExpected: #{inspect expected}\nActual: #{inspect actual}" end] do
       IexTest.Runner.test_one_block(ib)

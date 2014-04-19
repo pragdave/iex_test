@@ -9,9 +9,8 @@ defmodule IexTest.FakeIex do
   def c(files, path) do
     files
     |> List.wrap
-    |> Enum.map(fn file -> "#{path}/#{file}" end)
-    |> Kernel.ParallelCompiler.files
-    |> Enum.map &elem(&1, 0)
+    |> Enum.map(fn name -> Path.join(path, name) end)
+    |> Kernel.ParallelCompiler.files_to_path(path)
   end 
 
   def cd(path) do

@@ -45,19 +45,20 @@ defmodule IexTest.Runner do
       rescue e ->
         { "** (#{inspect e.__record__(:name)}) #{e.message}", binding }
        end
-      me <- { :result, [actual], new_binding }
+      send(me, { :result, [actual], new_binding })
     end
 
-    receive do: ({ :result, actual, new_binding } -> )
-
-    if output, do: actual = split(strip(output), "\n") ++ actual
-    report_result(file_name, line_number, expected, actual, code)
-    new_binding
+    receive do 
+      { :result, actual, new_binding } -> 
+      
+        if output && String.length(output) > 0, do: actual = split(strip(output), "\n") ++ actual
+        report_result(file_name, line_number, expected, actual, code)
+        new_binding
+    end
   end
 
 
   def report_result(file_name, line_number, expected, actual, code) do
-#    debug("Report", expected, actual)
 
     unless is_list(expected) do
       raise "not list #{expected}"
@@ -70,7 +71,7 @@ defmodule IexTest.Runner do
       e = hd(expected)
       if String.ends_with?(e, ["...", "…"]) do
         actual = [ hd(actual) ]
-        expected = [ Regex.replace(%r/(…|\.\.\.)$/, e, "") ]
+        expected = [ Regex.replace(~r/(…|\.\.\.)$/, e, "") ]
       end
     end
 
@@ -103,7 +104,7 @@ defmodule IexTest.Runner do
       cond do
 
         is_binary(expected) and is_binary(actual) and String.starts_with?(expected, "...") ->
-          fake_expected = Regex.replace(%r{\.\.\.\s*}, expected, "")
+          fake_expected = Regex.replace(~r{\.\.\.\s*}, expected, "")
           String.ends_with?(actual, fake_expected)
 
         is_float(actual) ->
@@ -131,13 +132,14 @@ defmodule IexTest.Runner do
       end
   end
 
-  defp remove_hash_terms(string) when !is_binary(string), do: remove_hash_terms(inspect string)
 
-  defp remove_hash_terms(string) do
-    str = Regex.replace(%r{#PID<[^>]+>}, string, "#PID<1.2.3>")
-    res = Regex.replace(%r{#Function<[^>]+>}, str, "#Function<xxx>")
+  defp remove_hash_terms(string) when is_binary(string) do
+    str = Regex.replace(~r{#PID<[^>]+>}, string, "#PID<1.2.3>")
+    res = Regex.replace(~r{#Function<[^>]+>}, str, "#Function<xxx>")
     res
   end
+
+  defp remove_hash_terms(string), do: remove_hash_terms(inspect string)
 
   def report_error(file_name, line_number, expected, actual, code) do
     IO.puts "In code:  #{inspect code} [#{file_name}:#{line_number}] "
@@ -147,7 +149,7 @@ defmodule IexTest.Runner do
 
 
   def parse_params(params) do
-    Regex.scan(%r/(\w+)="([^"]*)"/, String.strip(params))
+    Regex.scan(~r/(\w+)="([^"]*)"/, String.strip(params))
     |> map fn [_,k,v] -> {binary_to_atom(k),v} end
   end
 end  

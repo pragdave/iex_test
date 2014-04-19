@@ -30,7 +30,7 @@ defmodule IexTest.Extract do
   def extract_iex_blocks([], _file_name, _line_number,  acc), do: reverse(acc)
 
   def extract_iex_blocks([ line | rest ], file_name, line_number,  acc) do
-    case Regex.run(%r{<iex\s*([^>]*)>\s*$}, line) do
+    case Regex.run(~r{<iex\s*([^>]*)>\s*$}, line) do
     [ _, params ] ->
       { lines, new_rest, new_line_number } = extract_one_block(rest, line_number+1, [])
       block = IB.new(lines: lines, start_line: line_number+1, 
