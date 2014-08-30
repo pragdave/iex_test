@@ -34,8 +34,8 @@ defmodule ExtractTest do
       </iex>
       seven}
     result = extract_iex_blocks(lines, "a.ex")
-    b1 = IB.new(file_name: "a.ex", start_line: 4, params: "", lines: ~w{three four})
-    b2 = IB.new(file_name: "a.ex", start_line: 9, params: "", lines: ~w{six})
+    b1 = %IB{file_name: "a.ex", start_line: 4, params: "", lines: ~w{three four}}
+    b2 = %IB{file_name: "a.ex", start_line: 9, params: "", lines: ~w{six}}
     assert result == [ b1, b2 ]
   end
 

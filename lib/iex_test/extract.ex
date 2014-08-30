@@ -33,8 +33,8 @@ defmodule IexTest.Extract do
     case Regex.run(~r{<iex\s*([^>]*)>\s*$}, line) do
     [ _, params ] ->
       { lines, new_rest, new_line_number } = extract_one_block(rest, line_number+1, [])
-      block = IB.new(lines: lines, start_line: line_number+1, 
-                     params: params, file_name: file_name)
+      block = %IB{lines: lines, start_line: line_number+1, 
+                     params: params, file_name: file_name}
       extract_iex_blocks(new_rest, file_name, new_line_number, [ block | acc ]) 
     nil ->
       extract_iex_blocks(rest, file_name, line_number+1, acc)

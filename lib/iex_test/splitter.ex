@@ -15,16 +15,16 @@ defmodule IexTest.Splitter do
   def tee(val, fun), do: (fun.(val); val)
 
   def split_tests(lines, original_line_number \\ 0) do
-    TS[preload: preload, tests: tests] = split_tests(lines, [], [], [], nil)
-    TS.new(preload: preload, tests: reverse(tests), line_number: original_line_number)
+    %TS{preload: preload, tests: tests} = split_tests(lines, [], [], [], nil)
+    %TS{preload: preload, tests: reverse(tests), line_number: original_line_number}
   end
 
   defp split_tests([], tests, _code, [], preload) do
-    TS.new(preload: preload, tests: tests)
+    %TS{preload: preload, tests: tests}
   end
 
   defp split_tests([], tests, code, expected, preload) do
-    TS.new(preload: preload, tests: add_test(code, expected, tests))
+    %TS{preload: preload, tests: add_test(code, expected, tests)}
   end
 
   defp split_tests([<< "$ iex ", rest :: binary >> | t], tests, code, [], _preload) do
@@ -68,8 +68,7 @@ defmodule IexTest.Splitter do
 
   defp add_test(code, expected, tests) do
     [ 
-      T.new(code:     code     |> remove_comments |> reverse, 
-            expected: expected |> reverse)
+      %T{code: code |> remove_comments |> reverse, expected: expected |> reverse}
       | tests 
     ]
   end

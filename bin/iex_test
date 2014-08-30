@@ -1,3 +1,3 @@
 #!/usr/bin/env elixir
-Code.prepend_path Path.expand("../../ebin", __ENV__.file)
+Code.prepend_path Path.expand("../../_build/dev/lib/iex_test/ebin", __ENV__.file)
 IexTest.start

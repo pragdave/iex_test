@@ -15,7 +15,7 @@ defmodule IexTest.Runner do
 
   def test_blocks(blocks), do: each(blocks, &test_one_block/1)
 
-  def test_one_block(IB[file_name: file_name, start_line: line_number, params: params, lines: lines]) do
+  def test_one_block(%IB{file_name: file_name, start_line: line_number, params: params, lines: lines}) do
     params = parse_params(params)
     unless Keyword.get(params, :test, "yes") == "no" do
       lines 
@@ -24,7 +24,7 @@ defmodule IexTest.Runner do
     end
   end
 
-  def run_tests(TS[preload: preload, tests: tests], file_name, line_number, params) do
+  def run_tests(%TS{preload: preload, tests: tests}, file_name, line_number, params) do
     Code.compiler_options(ignore_module_conflict: true)
     if preload do
       in_dir = Keyword.get(params, :in, ".")
@@ -33,7 +33,7 @@ defmodule IexTest.Runner do
     reduce(tests, _binding=[], &run_one_test(&1, &2, file_name, line_number, params))
   end
 
-  def run_one_test(T[code: code, expected: expected], binding, file_name, line_number, params) do
+  def run_one_test(%T{code: code, expected: expected}, binding, file_name, line_number, params) do
     me = self
     in_dir = Keyword.get(params, :in, ".")
 
@@ -43,7 +43,7 @@ defmodule IexTest.Runner do
           Code.eval_string(join(code, "\n"), binding, functions: @fake_functions)
         end)
       rescue e ->
-        { "** (#{inspect e.__record__(:name)}) #{e.message}", binding }
+        { "** (#{inspect e.__struct__}) #{Exception.message(e)}", binding }
        end
       send(me, { :result, [actual], new_binding })
     end
@@ -150,6 +150,6 @@ defmodule IexTest.Runner do
 
   def parse_params(params) do
     Regex.scan(~r/(\w+)="([^"]*)"/, String.strip(params))
-    |> map fn [_,k,v] -> {binary_to_atom(k),v} end
+    |> map fn [_,k,v] -> {String.to_atom(k),v} end
   end
 end  

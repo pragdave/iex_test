@@ -149,7 +149,7 @@ defmodule RunnerTest do
   end
 
   defp run_test(lines) do
-    ib = IexTest.IexBlock.new(file_name: "a.pml", start_line: 1, params: ~s{in="test/code_to_load"}, lines: lines)
+    ib = %IexTest.IexBlock{file_name: "a.pml", start_line: 1, params: ~s{in="test/code_to_load"}, lines: lines}
 #    with_mock runner=IexTest.Runner, [:passthrough],
 #      [ report_error: fn(_,expected,actual,_) -> raise "Report error called unexpectedly\nExpected: #{inspect expected}\nActual: #{inspect actual}" end] do
       IexTest.Runner.test_one_block(ib)

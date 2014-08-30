@@ -1,1 +1,3 @@
-defrecord IexTest.Test, code: [], expected: []
+defmodule IexTest.Test do
+  defstruct code: [], expected: []
+end
