@@ -65,4 +65,10 @@ defmodule SplitterTest do
     assert split_tests(["iex> 1", "# comment one", "#", "three"]) ==
            %TS{preload: nil, tests: [ %T{code: ["1"], expected: ["three"]}]}
   end  
+
+  test "Blank lines between tests are removed" do
+    assert split_tests(["iex> 1", "1", "", "iex> 2", "2"]) ==
+           %TS{preload: nil, tests: [ %T{code: ["1"], expected: ["1"]},
+                                      %T{code: ["2"], expected: ["2"]}]}
+  end
 end

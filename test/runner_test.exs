@@ -82,6 +82,13 @@ defmodule RunnerTest do
     end
   end
 
+  test "runner handles maps" do
+    run_test ~l[
+       iex> states = %{ "AL" => "Alabama", "WI" => "Wisconsin" }
+       %{"AL" => "Alabama", "WI" => "Wisconsin"}
+    ]
+  end
+
   test "runner runs single step" do 
     run_test ~l{
       iex> a = 1
@@ -148,13 +155,37 @@ defmodule RunnerTest do
     }
   end
 
-  defp run_test(lines) do
-    ib = %IexTest.IexBlock{file_name: "a.pml", start_line: 1, params: ~s{in="test/code_to_load"}, lines: lines}
-#    with_mock runner=IexTest.Runner, [:passthrough],
-#      [ report_error: fn(_,expected,actual,_) -> raise "Report error called unexpectedly\nExpected: #{inspect expected}\nActual: #{inspect actual}" end] do
-      IexTest.Runner.test_one_block(ib)
-      #assert !called(runner.report_error)
-#    end
+  test "runner ignores blank lines" do
+    run_test  ~l{
+      iex> a = 1
+      1
+
+      iex> a + 2
+      3
+    }
+  end
+
+  test "a regression" do
+    run_test ~l[
+      iex> states = %{ "AL" => "Alabama", "WI" => "Wisconsin" }
+      %{"AL" => "Alabama", "WI" => "Wisconsin"}
+
+      iex> response_types = %{ { :error, :enoent } => :fatal,
+      ...>                     { :error, :busy } => :retry }
+      %{{:error, :busy} => :retry, {:error, :enoent} => :fatal}
+
+      iex> colors = %{ :red => 0xff0000, :green => 0x00ff00, :blue => 0x0000ff }
+      %{blue: 255, green: 65280, red: 16711680}
+    ]
+  end
+
+  def run_test(lines) do
+    ib = %IexTest.IexBlock{file_name: "a.pml", 
+                           start_line: 1, 
+                           params: ~s{in="test/code_to_load"}, 
+                           lines: lines}
+
+    IexTest.Runner.test_one_block(ib)
   end
 
 end

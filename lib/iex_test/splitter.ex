@@ -68,7 +68,8 @@ defmodule IexTest.Splitter do
 
   defp add_test(code, expected, tests) do
     [ 
-      %T{code: code |> remove_comments |> reverse, expected: expected |> reverse}
+      %T{code: code |> remove_comments |> reverse, 
+         expected: expected |> remove_trailing_blanks |> reverse}
       | tests 
     ]
   end
@@ -76,4 +77,10 @@ defmodule IexTest.Splitter do
   defp remove_comments(code) do
     code |> map fn line -> Regex.replace(~r/\s*#\s.*/, line, "") end
   end
+
+  defp remove_trailing_blanks([]),            do: []
+  defp remove_trailing_blanks([ "" | rest ]), do: remove_trailing_blanks(rest)
+  defp remove_trailing_blanks(other),         do: other
+
+                                         
 end
