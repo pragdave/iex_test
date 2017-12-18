@@ -1,7 +1,7 @@
 defmodule IexTest.Splitter do
 
-  import Enum,   only: [ join: 2, map: 2, reverse: 1 ]
-  import String, only: [ strip: 1]
+  import Enum,   only: [ map: 2, reverse: 1 ]
+  import String, only: [ trim: 1]
 
   alias IexTest.TestSequence, as: TS
   alias IexTest.Test,         as: T
@@ -28,19 +28,19 @@ defmodule IexTest.Splitter do
   end
 
   defp split_tests([<< "$ iex ", rest :: binary >> | t], tests, code, [], _preload) do
-    split_tests(t, tests, code, [], String.strip(rest))
+    split_tests(t, tests, code, [], String.trim(rest))
   end
 
   defp split_tests([<< "iex>", rest :: binary >> | t], tests, code, [], preload) do
-    split_tests(t, tests, [ strip(rest) | code ], [], preload)
+    split_tests(t, tests, [ trim(rest) | code ], [], preload)
   end
 
   defp split_tests([<< "iex>", rest :: binary >> | t], tests, code, expected, preload) do
-    split_tests(t, add_test(code, expected, tests), [ strip(rest) ], [], preload)
+    split_tests(t, add_test(code, expected, tests), [ trim(rest) ], [], preload)
   end
 
   defp split_tests([<< "...>", rest :: binary >> | t], tests, code, expected, preload) do
-     split_tests(t, tests, [ strip(rest) | code ], expected, preload)
+     split_tests(t, tests, [ trim(rest) | code ], expected, preload)
   end
 
 
@@ -57,25 +57,25 @@ defmodule IexTest.Splitter do
   # continuation line
   defp split_tests( [ << ".. ", rest :: binary >> | t], tests, code, 
                     [ last_expected | expected ], preload) do
-    split_tests(t, tests, code, [ "#{last_expected} #{strip(rest)}" | expected ], preload)
+    split_tests(t, tests, code, [ "#{last_expected} #{trim(rest)}" | expected ], preload)
   end
 
   defp split_tests( [ value | t], tests, code, expected, preload) do
-    split_tests(t, tests, code, [ strip(value) | expected ], preload)
+    split_tests(t, tests, code, [ trim(value) | expected ], preload)
   end
 
 
 
   defp add_test(code, expected, tests) do
     [ 
-      %T{code: code |> remove_comments |> reverse, 
+      %T{code:     code     |> remove_comments        |> reverse, 
          expected: expected |> remove_trailing_blanks |> reverse}
       | tests 
     ]
   end
 
   defp remove_comments(code) do
-    code |> map fn line -> Regex.replace(~r/\s*#\s.*/, line, "") end
+    code |> map(fn line -> Regex.replace(~r/\s*#\s.*/, line, "") end)
   end
 
   defp remove_trailing_blanks([]),            do: []

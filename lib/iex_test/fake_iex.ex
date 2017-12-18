@@ -14,7 +14,7 @@ defmodule IexTest.FakeIex do
   end 
 
   def cd(path) do
-    Process.set(@dir_key, path)
+    Process.put(@dir_key, path)
   end
 
   def r(module) do
@@ -25,6 +25,10 @@ defmodule IexTest.FakeIex do
     end
   end
 
+  # this is needed to stop the warning inrunner.
+  def dummy(), do: nil
+
+  
 #  def raise(msg), do: Kernel.raise(msg)
 #  def raise(msg, args), do: Kernel.raise(msg, args)
 
@@ -32,8 +36,10 @@ defmodule IexTest.FakeIex do
     source = module.module_info(:compile)[:source]
 
     case source do
-      { :source, source } -> String.from_char_list!(source)
+      { :source, source } -> List.to_string(source)
       _ -> nil
     end
   end
+
+  
 end

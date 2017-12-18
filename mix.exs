@@ -16,14 +16,11 @@ defmodule IexTest.Mixfile do
     ]
   end
 
-  # Returns the list of dependencies in the format:
-  # { :foobar, "0.1", git: "https://github.com/elixir-lang/foobar.git" }
-
   defp deps(:dev), do: deps(:test)
   defp deps(:test) do
     deps(:prod) ++ [ 
       { :mock, github: "jjh42/mock" },
-      { :meck, "0.8.1", github: "eproxus/meck", override: true }
+      { :meck, "0.8.4", github: "eproxus/meck", override: true }
     ]
 
   end

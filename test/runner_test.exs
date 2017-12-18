@@ -5,10 +5,10 @@ defmodule RunnerTest do
   import Mock
   import IexTest.Runner
 
-  import String, only: [strip: 1, split: 2]
+  import String, only: [trim: 1, split: 2]
 
   def sigil_l(lines, _opts) do
-    lines |> strip |> split("\n") |> Enum.map(&strip/1)
+    lines |> trim |> split("\n") |> Enum.map(&trim/1)
   end
 
   test "empty parameters are successfully parsed" do

@@ -1,17 +1,20 @@
 defmodule IexTest.Runner do
 
   import IexTest.Splitter, only: [ split_tests: 2]
-  import Enum,             only: [ each: 2, join: 2, map: 2, reduce: 3, reverse: 1 ]
-  import String,           only: [ split: 2, strip: 1 ]
+  import Enum,             only: [ each: 2, join: 2, map: 2, reduce: 3 ]
+  import String,           only: [ split: 2, trim: 1 ]
 
   alias  IexTest.TestSequence, as: TS
   alias  IexTest.Test,         as: T
   alias  IexTest.IexBlock,     as: IB
 
   @fake_functions (try do
-    import IexTest.FakeIex
-    __ENV__.functions
-  end)
+                     import IexTest.FakeIex
+                     dummy()
+                     __ENV__.functions
+                   rescue
+                     _e -> 0  # do nothing
+                   end)
 
   def test_blocks(blocks), do: each(blocks, &test_one_block/1)
 
@@ -34,52 +37,44 @@ defmodule IexTest.Runner do
   end
 
   def run_one_test(%T{code: code, expected: expected}, binding, file_name, line_number, params) do
-    me = self
+    me = self()
     in_dir = Keyword.get(params, :in, ".")
-
+    
     output = ExUnit.CaptureIO.capture_io fn ->
       { actual, new_binding } = try do
-        File.cd!(in_dir, fn -> 
-          Code.eval_string(join(code, "\n"), binding, functions: @fake_functions)
-        end)
-      rescue e ->
-        { "** (#{inspect e.__struct__}) #{Exception.message(e)}", binding }
-       end
+                                  File.cd!(in_dir, fn -> 
+                                    Code.eval_string(join(code, "\n"), binding, functions: @fake_functions)
+                                  end)
+                                rescue e ->
+                                    { "** (#{inspect e.__struct__}) #{Exception.message(e)}", binding }
+                                end
       send(me, { :result, [actual], new_binding })
     end
 
     receive do 
-      { :result, actual, new_binding } -> 
-      
-        if output && String.length(output) > 0, do: actual = split(strip(output), "\n") ++ actual
+      { :result, actual, new_binding } ->
+        actual = if output && String.length(output) > 0,
+            do: split(trim(output), "\n") ++ actual,
+            else: actual
         report_result(file_name, line_number, expected, actual, code)
         new_binding
     end
   end
 
 
-  def report_result(file_name, line_number, expected, actual, code) do
-
-    unless is_list(expected) do
-      raise "not list #{expected}"
-    end
+  def report_result(file_name, line_number, expected, actual, code) 
+  when is_list(expected) do
 
     # Allow for times where we only show the first line
     # of expected output
 
-    if length(expected) == 1 do
-      e = hd(expected)
-      if String.ends_with?(e, ["...", "…"]) do
-        actual = [ hd(actual) ]
-        expected = [ Regex.replace(~r/(…|\.\.\.)$/, e, "") ]
-      end
-    end
+    { expected, actual } = normalize_expected(expected, actual)
 
     # (need __MODULE__ to make tests using :meck work. ugh)
     cond do
       length(expected) != length(actual) -> 
         __MODULE__.report_error(file_name, line_number, expected, actual, code)
-
+        
       expected == actual ->
         true
 
@@ -92,6 +87,22 @@ defmodule IexTest.Runner do
 
   end
 
+  defp normalize_expected(expected, actual) when length(expected) == 1 do
+    e = hd(expected)
+    if String.ends_with?(e, ["...", "…"]) do
+      actual = [ hd(actual) ]
+      expected = [ Regex.replace(~r/(…|\.\.\.)$/, e, "") ]
+      { expected, actual }
+    else
+      { expected, actual }
+    end
+  end
+
+  defp normalize_expected(expected, actual) do
+    { expected, actual }
+  end
+    
+  
   def check_all_equal(list_of_expected_and_actual) do
     list_of_expected_and_actual
     |> Enum.map(&check_equal/1)
@@ -100,43 +111,52 @@ defmodule IexTest.Runner do
 
   def check_equal({expected, expected}), do: true
   def check_equal({expected, actual}) do
+    # IO.inspect [ "check_equal", expected, actual ] 
     try do 
       cond do
 
         is_binary(expected) and is_binary(actual) and String.starts_with?(expected, "...") ->
-          fake_expected = Regex.replace(~r{\.\.\.\s*}, expected, "")
-          String.ends_with?(actual, fake_expected)
+        fake_expected = Regex.replace(~r{\.\.\.\s*}, expected, "")
+        String.ends_with?(actual, fake_expected)
 
-        is_float(actual) ->
-          if is_binary(expected), do: {expected,_} = String.to_float(expected)
-          abs(expected - actual) < (expected / 10_000)
+      # is_binary(expected) &&
+      # is_binary(actual) &&
+      # String.match?(expected, ~r/(\.\.\.|...)\s*$/) ->
+      #   fake_expected = Regex.replace(~r{(\.\.\.\|…)s*$}, expected, "")
+      #   raise inspect [:argh, fake_expected]
+      #   String.starts_with?(actual, fake_expected)
 
-        remove_hash_terms(expected) == remove_hash_terms(actual) ->
-          true
+        
+      is_float(actual) ->
+        expected = to_float(expected)
+        abs(expected - actual) < (expected / 10_000)
 
-        expected == inspect(actual) ->
-          true
+      remove_hash_terms(expected) == remove_hash_terms(actual) ->
+        true
 
-        is_binary(expected) and String.starts_with?(expected, "** ") ->
-          false 
+      expected == inspect(actual) ->
+        true
 
-        Code.eval_string(expected) == actual ->
-          true
+      is_binary(expected) and String.starts_with?(expected, "** ") ->
+        false 
+        
+      {new_expected, _ } = Code.eval_string(expected) ->
+          new_expected == actual
 
-        true ->
-          false
       end 
-      rescue
-        _ -> 
-          false
-      end
+    rescue
+      e ->
+        IO.puts Exception.format(:error, e)
+        IO.inspect [ e, expected, actual ]
+        false
+    end
   end
 
 
   defp remove_hash_terms(string) when is_binary(string) do
-    str = Regex.replace(~r{#PID<[^>]+>}, string, "#PID<1.2.3>")
-    res = Regex.replace(~r{#Function<[^>]+>}, str, "#Function<xxx>")
-    res
+    string
+    |> String.replace(~r{#PID<[^>]+>}, "#PID<1.2.3>")
+    |> String.replace(~r{#Function<[.0-9]+}, "#Function<12.3456")
   end
 
   defp remove_hash_terms(string), do: remove_hash_terms(inspect string)
@@ -149,7 +169,16 @@ defmodule IexTest.Runner do
 
 
   def parse_params(params) do
-    Regex.scan(~r/(\w+)="([^"]*)"/, String.strip(params))
-    |> map fn [_,k,v] -> {String.to_atom(k),v} end
+    Regex.scan(~r/(\w+)="([^"]*)"/, String.trim(params))
+    |> map(fn [_,k,v] -> {String.to_atom(k),v} end)
   end
+
+  defp to_float(value) when is_binary(value) do
+    String.to_float(value)
+  end
+  
+  defp to_float(value) do
+    value
+  end
+    
 end  
